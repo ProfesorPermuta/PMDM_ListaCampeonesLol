@@ -23,7 +23,10 @@ class ListaViewModel : ViewModel() {
 
     // El estado nace con la lista vacía; la página llamará a esto al iniciarse
     fun cargarCampeones() {
-        _uiState.update { it.copy(campeones = todosLosCampeones) }
+        // Respeta el filtro actual: la página puede volver a pedir la carga
+        _uiState.update {
+            it.copy(campeones = todosLosCampeones.filter { c -> c.nombre.contains(it.filtro, ignoreCase = true) })
+        }
     }
 
     fun onFiltroChange(filtro: String) {

@@ -7,40 +7,47 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.permuta.listapjlol.model.campeones
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.permuta.listapjlol.ui.componente.BuscadorCampeon
 import com.permuta.listapjlol.ui.componente.BuscadorCampeonData
 import com.permuta.listapjlol.ui.componente.CampeonCard
 import com.permuta.listapjlol.ui.componente.CampeonCardData
 import com.permuta.listapjlol.ui.theme.ListaPjLolTheme
+import com.permuta.listapjlol.viewmodel.ListaViewModel
 
 @Composable
-fun ListaPage(onCampeonClick: (String) -> Unit, modifier: Modifier = Modifier) {
-    // Estado local de la página: es lo que se moverá al ViewModel
-    var filtro by remember { mutableStateOf("") }
-    val filtrados = campeones.filter { it.nombre.contains(filtro, ignoreCase = true) }
+fun ListaPage(
+    onCampeonClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: ListaViewModel = viewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // Al entrar en la página se pide al ViewModel que cargue el listado
+    LaunchedEffect(Unit) {
+        viewModel.cargarCampeones()
+    }
 
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         BuscadorCampeon(
-            data = BuscadorCampeonData(texto = filtro),
-            onTextoChange = { filtro = it },
+            data = BuscadorCampeonData(texto = uiState.filtro),
+            onTextoChange = viewModel::onFiltroChange,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
         LazyColumn(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(filtrados, key = { it.id }) { campeon ->
+            items(uiState.campeones, key = { it.id }) { campeon ->
                 CampeonCard(
                     data = CampeonCardData(campeon.nombre, campeon.titulo, campeon.imagenCard),
                     onClick = { onCampeonClick(campeon.id) }
