@@ -13,11 +13,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.permuta.listapjlol.model.campeonPorId
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.permuta.listapjlol.ui.componente.CampeonRelacionado
 import com.permuta.listapjlol.ui.componente.CampeonRelacionadoData
 import com.permuta.listapjlol.ui.componente.HabilidadItem
@@ -27,14 +30,22 @@ import com.permuta.listapjlol.ui.componente.ImagenCampeonData
 import com.permuta.listapjlol.ui.componente.TituloSeccion
 import com.permuta.listapjlol.ui.componente.TituloSeccionData
 import com.permuta.listapjlol.ui.theme.ListaPjLolTheme
+import com.permuta.listapjlol.viewmodel.DetalleViewModel
 
 @Composable
 fun DetallePage(
     campeonId: String,
     onRelacionadoClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: DetalleViewModel = viewModel()
 ) {
-    val campeon = campeonPorId(campeonId)
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val campeon = uiState.campeon
+
+    // Se vuelve a lanzar si cambia el id del campeón a mostrar
+    LaunchedEffect(campeonId) {
+        viewModel.cargarCampeon(campeonId)
+    }
 
     if (campeon == null) {
         Text("Campeón no encontrado", modifier = modifier.padding(16.dp))
@@ -77,13 +88,11 @@ fun DetallePage(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.Top
         ) {
-            items(campeon.relacionados, key = { it }) { id ->
-                campeonPorId(id)?.let { rel ->
-                    CampeonRelacionado(
-                        data = CampeonRelacionadoData(rel.nombre, rel.imagenCard),
-                        onClick = { onRelacionadoClick(rel.id) }
-                    )
-                }
+            items(uiState.relacionados, key = { it.id }) { rel ->
+                CampeonRelacionado(
+                    data = CampeonRelacionadoData(rel.nombre, rel.imagenCard),
+                    onClick = { onRelacionadoClick(rel.id) }
+                )
             }
         }
     }
